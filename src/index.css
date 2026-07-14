@@ -1,0 +1,88 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #07111f;
+  --color-ink-soft: #1a2740;
+  --color-slate: #5b6b86;
+  --color-mist: #e8eef8;
+  --color-cloud: #f4f7fc;
+  --color-line: #d7e0ef;
+  --color-brand: #0b63f6;
+  --color-brand-deep: #0847b8;
+  --color-brand-soft: #dbe8ff;
+  --color-success: #0f9f6e;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-orange-money: #ff7900;
+  --color-moov: #0066b3;
+  --color-telecel: #e30613;
+  --color-wave: #1dc8db;
+
+  --shadow-soft: 0 10px 40px rgba(7, 17, 31, 0.08);
+  --shadow-glow: 0 18px 50px rgba(11, 99, 246, 0.18);
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    color: var(--color-ink);
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(11, 99, 246, 0.16), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, rgba(8, 71, 184, 0.12), transparent 50%),
+      linear-gradient(180deg, #f8fbff 0%, #eef3fb 48%, #f7f9fc 100%);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(18px);
+  }
+
+  .glass-dark {
+    background: rgba(7, 17, 31, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(18px);
+  }
+
+  .surface-grid {
+    background-image:
+      linear-gradient(rgba(11, 99, 246, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(11, 99, 246, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
