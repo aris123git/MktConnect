@@ -1,39 +1,34 @@
 import { motion } from 'framer-motion'
-import {
-  Banknote,
-  Check,
-  Smartphone,
-  type LucideIcon,
-} from 'lucide-react'
+import { Check } from 'lucide-react'
 import type { PaymentMethod, PaymentMethodId } from '@/types'
 import { cn } from '@/lib/utils'
 
 const methodStyles: Record<
   PaymentMethodId,
-  { icon: LucideIcon; accent: string; iconBg: string }
+  { mark: string; accent: string; iconBg: string }
 > = {
   'orange-money': {
-    icon: Smartphone,
+    mark: 'OM',
     accent: 'text-[#ff7900]',
     iconBg: 'bg-orange-50',
   },
   'moov-money': {
-    icon: Smartphone,
+    mark: 'MM',
     accent: 'text-[#0066b3]',
     iconBg: 'bg-sky-50',
   },
   'telecel-cash': {
-    icon: Smartphone,
+    mark: 'TC',
     accent: 'text-[#e30613]',
     iconBg: 'bg-red-50',
   },
   wave: {
-    icon: Smartphone,
+    mark: 'W',
     accent: 'text-[#0ea5b7]',
     iconBg: 'bg-cyan-50',
   },
   'pay-on-site': {
-    icon: Banknote,
+    mark: 'POS',
     accent: 'text-ink',
     iconBg: 'bg-mist',
   },
@@ -51,7 +46,6 @@ export function PaymentMethodCard({
   onSelect,
 }: PaymentMethodCardProps) {
   const style = methodStyles[method.id]
-  const Icon = style.icon
 
   return (
     <motion.button
@@ -68,12 +62,12 @@ export function PaymentMethodCard({
     >
       <div
         className={cn(
-          'flex h-12 w-12 items-center justify-center rounded-xl',
+          'flex h-12 w-12 items-center justify-center rounded-xl text-sm font-bold tracking-wide',
           style.iconBg,
           style.accent,
         )}
       >
-        <Icon className="h-5 w-5" />
+        {style.mark}
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-ink">{method.name}</p>
