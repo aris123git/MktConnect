@@ -3,7 +3,9 @@ import { Check, X } from 'lucide-react'
 import { RequestStatusBadge } from '@/components/admin/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useMikrotikSession } from '@/context/MikrotikSessionContext'
 import { pendingRequests as initialRequests } from '@/data/mock'
+import { packages } from '@/data/mock'
 import { formatFcfa } from '@/lib/utils'
 import type { PendingRequest, RequestStatus } from '@/types'
 
@@ -16,8 +18,18 @@ function formatTime(value: string) {
   })
 }
 
+function resolvePackage(packageName: string, amount: number) {
+  return (
+    packages.find((pkg) => pkg.name === packageName || pkg.durationLabel === packageName) ??
+    packages.find((pkg) => pkg.price === amount) ??
+    null
+  )
+}
+
 export function PendingRequestsPage() {
   const [requests, setRequests] = useState<PendingRequest[]>(initialRequests)
+  const { activateAccess, refresh } = useMikrotikSession()
+  const [message, setMessage] = useState<string | null>(null)
 
   const updateStatus = (id: string, status: RequestStatus) => {
     setRequests((current) =>
@@ -27,6 +39,36 @@ export function PendingRequestsPage() {
     )
   }
 
+  const approve = (request: PendingRequest) => {
+    const pkg = resolvePackage(request.packageName, request.amount)
+    if (!pkg) {
+      setMessage(`No package mapping for ${request.packageName}`)
+      return
+    }
+
+    try {
+      activateAccess({
+        packageId: pkg.id,
+        packageName: pkg.durationLabel,
+        durationHours: pkg.durationHours,
+        amountPaid: request.amount,
+        paymentMethod: request.paymentMethod,
+        phoneNumber: request.phone,
+        customerName: request.customer,
+        macAddress: request.macAddress,
+        device: request.device,
+        forceReplace: true,
+      })
+      updateStatus(request.id, 'approved')
+      refresh()
+      setMessage(
+        `MikroTik access granted to ${request.macAddress} for ${pkg.durationHours}h (paid ${formatFcfa(request.amount)}).`,
+      )
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Approval failed')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -34,9 +76,16 @@ export function PendingRequestsPage() {
           Pending Requests
         </h1>
         <p className="mt-1 text-sm text-slate">
-          Approve or reject customer access requests before MikroTik activation.
+          Approve to simulate MikroTik activation for exactly the paid package
+          duration.
         </p>
       </div>
+
+      {message && (
+        <div className="rounded-2xl border border-brand/20 bg-brand-soft/50 px-4 py-3 text-sm text-ink">
+          {message}
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -88,7 +137,7 @@ export function PendingRequestsPage() {
                         size="sm"
                         variant="success"
                         disabled={request.status !== 'pending'}
-                        onClick={() => updateStatus(request.id, 'approved')}
+                        onClick={() => approve(request)}
                       >
                         <Check className="h-3.5 w-3.5" />
                         Approve
@@ -97,7 +146,10 @@ export function PendingRequestsPage() {
                         size="sm"
                         variant="danger"
                         disabled={request.status !== 'pending'}
-                        onClick={() => updateStatus(request.id, 'rejected')}
+                        onClick={() => {
+                          updateStatus(request.id, 'rejected')
+                          setMessage(`Request ${request.id} rejected — no MikroTik grant.`)
+                        }}
                       >
                         <X className="h-3.5 w-3.5" />
                         Reject
