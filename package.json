@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test:payment": "node scripts/test-payment.mjs"
+    "test:payment": "node scripts/test-payment.mjs",
+    "test:mikrotik": "node scripts/test-mikrotik.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.19",

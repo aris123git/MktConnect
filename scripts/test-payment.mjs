@@ -23,13 +23,20 @@ async function assertVisible(page, text, label) {
   pass(label, text)
 }
 
+async function clearSession(page) {
+  await page.addInitScript(() => {
+    localStorage.removeItem('mktconnect.mikrotik.v1')
+  })
+  await page.goto(BASE, { waitUntil: 'networkidle' })
+  await page.evaluate(() => localStorage.removeItem('mktconnect.mikrotik.v1'))
+}
+
 async function run() {
   const browser = await chromium.launch({ headless: true })
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
 
   try {
-    // ---------- Flow 1: Orange Money ----------
-    await page.goto(BASE, { waitUntil: 'networkidle' })
+    await clearSession(page)
     await assertVisible(page, 'Welcome to Starlink Hotspot', 'Portal loads')
 
     await page.getByRole('button', { name: /6 Hours/i }).first().click()
@@ -53,48 +60,31 @@ async function run() {
 
     await page.getByRole('button', { name: /Orange Money/i }).first().click()
     await page.waitForTimeout(250)
+    await assertVisible(page, 'Orange Money checkout', 'Mobile Money form appears')
 
-    await assertVisible(
-      page,
-      'Orange Money checkout',
-      'Mobile Money form appears',
-    )
-
-    if (await payBtn.isDisabled()) {
-      pass('PAY disabled without phone number')
-    } else {
-      fail('PAY should stay disabled without phone')
-    }
+    if (await payBtn.isDisabled()) pass('PAY disabled without phone number')
+    else fail('PAY should stay disabled without phone')
 
     await page.locator('#phone').fill('70')
-    if (await payBtn.isDisabled()) {
-      pass('PAY disabled for short phone number')
-    } else {
-      fail('PAY should reject short phone number')
-    }
+    if (await payBtn.isDisabled()) pass('PAY disabled for short phone number')
+    else fail('PAY should reject short phone number')
 
     await page.locator('#phone').fill('70 12 34 56')
-    if (!(await payBtn.isDisabled())) {
-      pass('PAY enabled with valid phone')
-    } else {
-      fail('PAY should enable with valid phone')
-    }
+    if (!(await payBtn.isDisabled())) pass('PAY enabled with valid phone')
+    else fail('PAY should enable with valid phone')
 
-    await page.screenshot({
-      path: `${OUT}/01-orange-money-ready.png`,
-      fullPage: true,
-    })
+    await page.screenshot({ path: `${OUT}/01-orange-money-ready.png`, fullPage: true })
 
     await page.getByRole('button', { name: /^Continue$/i }).click()
-    await page.waitForURL('**/success')
-    await assertVisible(page, 'Payment Request Created', 'Orange Money → success')
-    await assertVisible(page, 'Orange Money', 'Success shows payment method')
-    await page.getByText('6 Hours', { exact: true }).first().waitFor({ state: 'visible' })
-    pass('Success shows package', '6 Hours')
-    await assertVisible(page, '70 12 34 56', 'Success shows phone')
+    await page.waitForURL('**/session', { timeout: 15000 })
+    await assertVisible(page, 'You are online', 'Orange Money → MikroTik session')
+    await assertVisible(page, 'Orange Money', 'Session shows payment method')
+    await page.getByText('6 Hours').first().waitFor({ state: 'visible' })
+    pass('Session shows package', '6 Hours')
     await page.screenshot({ path: `${OUT}/02-orange-money-success.png` })
 
-    // ---------- Flow 2: Pay on Site ----------
+    // Clear for Pay on Site
+    await page.evaluate(() => localStorage.removeItem('mktconnect.mikrotik.v1'))
     await page.goto(BASE, { waitUntil: 'networkidle' })
     await page.getByRole('button', { name: /1 Day/i }).first().click()
     await page.getByRole('button', { name: /Pay on Site/i }).first().click()
@@ -112,32 +102,25 @@ async function run() {
       .filter({ visible: true })
       .first()
     const payOnSiteBtn = summary.getByRole('button', { name: /PAY & CONNECT/i })
-    if (!(await payOnSiteBtn.isDisabled())) {
-      pass('PAY enabled for Pay on Site without phone')
-    } else {
-      fail('PAY should enable for Pay on Site')
-    }
+    if (!(await payOnSiteBtn.isDisabled())) pass('PAY enabled for Pay on Site without phone')
+    else fail('PAY should enable for Pay on Site')
 
-    await page.screenshot({
-      path: `${OUT}/03-pay-on-site-ready.png`,
-      fullPage: true,
-    })
-
+    await page.screenshot({ path: `${OUT}/03-pay-on-site-ready.png`, fullPage: true })
     await payOnSiteBtn.click()
-    await page.waitForURL('**/success')
-    await assertVisible(page, 'Payment Request Created', 'Pay on Site → success')
-    await assertVisible(page, 'Pay on Site', 'Success shows Pay on Site')
-    await assertVisible(page, '200 FCFA', 'Success shows amount')
+    await page.waitForURL('**/session', { timeout: 15000 })
+    await assertVisible(page, 'You are online', 'Pay on Site → MikroTik session')
+    await assertVisible(page, 'Pay on Site', 'Session shows Pay on Site')
+    await assertVisible(page, '200 FCFA', 'Session shows amount')
     await page.screenshot({ path: `${OUT}/04-pay-on-site-success.png` })
 
-    // ---------- Flow 3: Wave ----------
+    await page.evaluate(() => localStorage.removeItem('mktconnect.mikrotik.v1'))
     await page.goto(BASE, { waitUntil: 'networkidle' })
     await page.getByRole('button', { name: /7 Days/i }).first().click()
     await page.locator('button').filter({ hasText: 'Fast mobile payment with Wave' }).click()
     await page.locator('#phone').fill('76001122')
     await page.getByRole('button', { name: /^Continue$/i }).click()
-    await page.waitForURL('**/success')
-    await assertVisible(page, 'Wave', 'Wave payment → success')
+    await page.waitForURL('**/session', { timeout: 15000 })
+    await assertVisible(page, 'Wave', 'Wave payment → session')
     const amountText = await page.locator('body').innerText()
     if (amountText.includes('1') && amountText.includes('000') && amountText.includes('FCFA')) {
       pass('Wave amount formatted', '1000 FCFA')
@@ -146,7 +129,7 @@ async function run() {
     }
     await page.screenshot({ path: `${OUT}/05-wave-success.png` })
 
-    // ---------- Flow 4: Moov + Telecel smoke ----------
+    await page.evaluate(() => localStorage.removeItem('mktconnect.mikrotik.v1'))
     await page.goto(BASE, { waitUntil: 'networkidle' })
     await page.getByRole('button', { name: /Moov Money/i }).first().click()
     await assertVisible(page, 'Moov Money checkout', 'Moov Money form')
